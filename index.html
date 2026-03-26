@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pro Resume Builder</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+      body {
+        background: linear-gradient(135deg, #eef2ff, #f8fafc);
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 40px;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+      .logo {
+        font-weight: 600;
+        font-size: 20px;
+        color: #4f46e5;
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+      }
+      .left,
+      .right {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      }
+      .left {
+        width: 35%;
+        height: 90vh;
+        overflow: auto;
+      }
+      .right {
+        width: 65%;
+        height: 90vh;
+        overflow: auto;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px;
+        margin: 6px 0;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+      }
+      button {
+        padding: 10px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      .primary {
+        background: #4f46e5;
+        color: white;
+      }
+
+      .resume {
+        max-width: 800px;
+        margin: auto;
+        padding: 30px;
+        background: white;
+      }
+      .title {
+        text-align: center;
+      }
+      .title h1 {
+        display: inline-block;
+        border-bottom: 3px solid #000;
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+      }
+      .photo {
+        width: 90px;
+        height: 110px;
+        border-radius: 10px;
+        object-fit: cover;
+      }
+      .section {
+        margin-top: 15px;
+        border: 1px dashed #ddd;
+        padding: 8px;
+        border-radius: 10px;
+        cursor: move;
+      }
+      .section h3 {
+        border-bottom: 2px solid #000;
+        margin-bottom: 5px;
+      }
+
+      .dragging {
+        opacity: 0.5;
+      }
+
+      .sidebar {
+        display: flex;
+      }
+      .sidebar-left {
+        width: 30%;
+        background: #4f46e5;
+        color: white;
+        padding: 15px;
+      }
+      .sidebar-right {
+        width: 70%;
+        padding: 15px;
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          flex-direction: column;
+        }
+        .left,
+        .right {
+          width: 100%;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="logo">Resume Pro</div>
+    </div>
+
+    <div class="container">
+      <div class="left">
+        <h3>Build Resume</h3>
+        <input id="name" placeholder="Full Name" />
+        <input id="email" placeholder="Email" />
+        <input id="phone" placeholder="Phone" />
+        <textarea id="objective" placeholder="Objective"></textarea>
+
+        <h4>Skills</h4>
+        <textarea id="skills"></textarea>
+
+        <h4>Education</h4>
+        <div id="edu"></div>
+        <button onclick="addEdu()">+ Add</button>
+
+        <h4>Experience</h4>
+        <textarea id="exp"></textarea>
+
+        <h4>Projects</h4>
+        <textarea id="projects"></textarea>
+
+        <h4>Custom Sections</h4>
+        <div id="custom"></div>
+        <button onclick="addCustom()">+ Add Section</button>
+        <br>
+        <label><h4>Photo</h4></label>
+        <input type="file" id="photo" />
+
+        <select id="template" onchange="render()">
+          <option value="modern">Modern</option>
+          <option value="sidebar">Sidebar</option>
+        </select>
+
+        <button class="primary" onclick="render()">Generate</button>
+        <button onclick="downloadPDF()">Download</button>
+      </div>
+
+      <div class="right">
+        <div id="resume" class="resume"></div>
+      </div>
+    </div>
+
+    <script>
+      function addEdu() {
+        const div = document.createElement("div");
+        div.innerHTML = `<input placeholder='Degree'><input placeholder='College'><input placeholder='Year'>`;
+        document.getElementById("edu").appendChild(div);
+      }
+
+      function addCustom() {
+        const div = document.createElement("div");
+        div.innerHTML = `<input placeholder='Heading'><textarea placeholder='Content'></textarea><button onclick="this.parentElement.remove()">Remove</button>`;
+        document.getElementById("custom").appendChild(div);
+      }
+
+      function getSkills() {
+        return document
+          .getElementById("skills")
+          .value.split(",")
+          .filter((s) => s.trim() != "")
+          .map((s) => `<li>${s.trim()}</li>`)
+          .join("");
+      }
+
+      function getEdu() {
+        let html = "";
+        document.querySelectorAll("#edu div").forEach((d) => {
+          const i = d.querySelectorAll("input");
+          if (i[0].value)
+            html += `<p><b>${i[0].value}</b> - ${i[1].value} (${i[2].value})</p>`;
+        });
+        return html;
+      }
+
+      function getCustom() {
+        let html = "";
+        document.querySelectorAll("#custom div").forEach((d) => {
+          const i = d.querySelectorAll("input,textarea");
+          if (i[0].value && i[1].value)
+            html += `<div class='section'><h3>${i[0].value}</h3><p>${i[1].value}</p></div>`;
+        });
+        return html;
+      }
+
+      function render() {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const phone = document.getElementById("phone").value;
+        const obj = document.getElementById("objective").value;
+        const exp = document.getElementById("exp").value;
+        const proj = document.getElementById("projects").value;
+
+        let img = "";
+        const file = document.getElementById("photo").files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            img = `<img src='${e.target.result}' class='photo'>`;
+            build(img);
+          };
+          reader.readAsDataURL(file);
+        } else build("");
+
+        function build(img) {
+          const t = document.getElementById("template").value;
+          let sections = `
+<div class='section'><h3>Objective</h3><p>${obj}</p></div>
+<div class='section'><h3>Skills</h3><ul>${getSkills()}</ul></div>
+<div class='section'><h3>Education</h3>${getEdu()}</div>
+<div class='section'><h3>Experience</h3><p>${exp}</p></div>
+<div class='section'><h3>Projects</h3><p>${proj}</p></div>
+${getCustom()}`;
+
+          let html = `
+<div class='title'><h1>RESUME</h1></div>
+<div class='header'>
+<div>
+<h2>${name}</h2>
+<p>${email} | ${phone}</p>
+</div>
+${img}
+</div>
+<div id='sections'>${sections}</div>`;
+
+          if (t === "sidebar") {
+            html = `
+<div class='title'><h1>RESUME</h1></div>
+<div class='sidebar'>
+<div class='sidebar-left'>
+<h2>${name}</h2>
+<p>${email}<br>${phone}</p>
+<ul>${getSkills()}</ul>
+</div>
+<div class='sidebar-right'>
+<div id='sections'>${sections}</div>
+</div>
+</div>`;
+          }
+
+          document.getElementById("resume").innerHTML = html;
+          addDrag();
+        }
+      }
+
+      function addDrag() {
+        const container = document.getElementById("sections");
+        let dragged;
+        container.querySelectorAll(".section").forEach((sec) => {
+          sec.draggable = true;
+          sec.addEventListener("dragstart", () => {
+            dragged = sec;
+            sec.classList.add("dragging");
+          });
+          sec.addEventListener("dragend", () =>
+            sec.classList.remove("dragging"),
+          );
+        });
+        container.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const after = [
+            ...container.querySelectorAll(".section:not(.dragging)"),
+          ].find((s) => e.clientY <= s.offsetTop + s.offsetHeight / 2);
+          if (after == null) container.appendChild(dragged);
+          else container.insertBefore(dragged, after);
+        });
+      }
+
+      function downloadPDF() {
+        const element = document.getElementById("resume");
+
+        if (!element.innerHTML.trim()) {
+          alert("Please generate resume first ⚠️");
+          return;
+        }
+
+        html2pdf()
+          .set({
+            margin: 0,
+            filename: "resume.pdf",
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: "in", format: "a4" },
+          })
+          .from(element)
+          .save();
+      }
+
+      // Live update
+      document.querySelectorAll("input,textarea,select").forEach((el) => {
+        el.addEventListener("input", render);
+      });
+    </script>
+  </body>
+</html>
